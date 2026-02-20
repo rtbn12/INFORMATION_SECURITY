@@ -447,10 +447,10 @@ public class Pervak {
                 switch (vizinerChoice)
                 {
                     case 1:
-                        shifrovanieVISINER();
+                        shifrovanieVISINER(scanner);
                         break;
                     case 2:
-                        deShifrovanieVISENER();
+                        deShifrovanieVISENER(scanner);
                         break;
                     case 0:
                         vizinerCycle = false;
@@ -524,11 +524,269 @@ public class Pervak {
 
     }
 
-    public static void shifrovanieVISINER(){
+    public static void shifrovanieVISINER(Scanner scanner){
+
+        String name_ishodnik = "";
+        String name_end = "";
+
+
+        HashMap<Integer, Character> dictionary = createDictionary();
+
+
+        HashMap<Character, Integer> reverseDict = new HashMap<>();
+        for (Map.Entry<Integer, Character> entry : dictionary.entrySet()) {
+            reverseDict.put(entry.getValue(), entry.getKey());
+        }
+
+        int dictSize = dictionary.size();
+
+        boolean cycle = true;
+        while (cycle) {
+            System.out.print("Введите название файла, который хотите зашифровать (не забудьте добавить .txt)\n" +
+                    "Название: ");
+
+            name_ishodnik = scanner.nextLine();
+
+            if (name_ishodnik.trim().isEmpty()) {
+                System.out.println("Имя файла не может быть пустым!");
+                continue;
+            }
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(name_ishodnik))) {
+                ArrayList<String> lines = new ArrayList<>();
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    lines.add(line);
+                }
+
+                cycle = false;
+
+                System.out.print("Введите название файла для зашифрованного результата (с .txt): ");
+                name_end = scanner.nextLine();
+
+                if (name_end.trim().isEmpty()) {
+                    name_end = name_ishodnik.replace(".txt", "_encrypted.txt");
+                    if (name_end.equals(name_ishodnik)) {
+                        name_end = name_ishodnik + "_encrypted.txt";
+                    }
+                    System.out.println("Будет использовано имя: " + name_end);
+                }
+
+                boolean key_cycle = true;
+                String key = "";
+                 do{
+                     System.out.print("Введи ключ - пароль шифрования (слово или фразу на руссом языке" +
+                             ",не более 30 символов)\n" +
+                             "Ваш вариант: ");
+                     key= scanner.nextLine();
+                     if(key.length()<=30){
+                         for(char c : key.toCharArray()){
+                             if(!reverseDict.containsKey(c)){
+                                 System.out.println("Ошибка! Слово должно полностью состоять из русских букв!\n" +
+                                         "Попробуйте ещё раз!");
+                                 key_cycle = false;
+                                 break;
+
+                             }
+                             else{
+                                 key_cycle = true;
+                             }
+                         }
+
+                     }
+                     else {
+                         System.out.println("Произошла ошибка, вы ввели слишком длинно слово длинное!");
+                         key_cycle = false;
+
+                     }
+
+                 } while (!key_cycle);
+
+                System.out.println("Кодовое слово успешно учтено!");
+
+
+                try (PrintWriter writer = new PrintWriter(name_end)) {
+                    int isxodIndex;
+                    int keyIndex =0;
+                    int newIndex;
+                    String bestKey = key.trim();
+                    int bestKeyLength = bestKey.length();
+                    char[] bestKeyArray = bestKey.toCharArray();
+                    for (String originalLine : lines) {
+                        StringBuilder encryptedLine = new StringBuilder();
+
+                        for (char c : originalLine.toCharArray()) {
+                            if(reverseDict.containsKey(c)){
+                                isxodIndex = reverseDict.get(c);
+                                int smesenie = reverseDict.get(bestKeyArray[keyIndex]);
+                                newIndex = (isxodIndex+smesenie)%dictSize;
+                                keyIndex++;
+                                if(keyIndex ==bestKeyLength){keyIndex=0;}
+
+                                encryptedLine.append(dictionary.get(newIndex));
+
+
+                            }else{
+
+                                encryptedLine.append(c);
+                            }
+                        }
+
+                        writer.println(encryptedLine.toString());
+                    }
+
+                    System.out.println("Файл успешно зашифрован и сохранен: " + name_end);
+                    System.out.println("Использован ключ: " + key);
+
+
+
+                } catch (FileNotFoundException e) {
+                    System.out.println("Не удалось создать выходной файл: " + e.getMessage());
+                }
+
+            } catch (FileNotFoundException e) {
+                System.out.println("\nФайл с таким именем не найден, попробуйте ввести имя ещё раз!");
+            } catch (IOException e) {
+                System.out.println("Ошибка чтения файла: " + e.getMessage());
+                System.out.println("Попробуйте ещё раз!");
+            }
+        }
 
     }
 
-    public static void deShifrovanieVISENER(){
+    public static void deShifrovanieVISENER(Scanner scanner){
+
+        String name_ishodnik = "";
+        String name_end = "";
+
+
+        HashMap<Integer, Character> dictionary = createDictionary();
+
+
+        HashMap<Character, Integer> reverseDict = new HashMap<>();
+        for (Map.Entry<Integer, Character> entry : dictionary.entrySet()) {
+            reverseDict.put(entry.getValue(), entry.getKey());
+        }
+
+        int dictSize = dictionary.size();
+
+        boolean cycle = true;
+        while (cycle) {
+            System.out.print("Введите название файла, который хотите расшифровать (не забудьте добавить .txt)\n" +
+                    "Название: ");
+
+            name_ishodnik = scanner.nextLine();
+
+            if (name_ishodnik.trim().isEmpty()) {
+                System.out.println("Имя файла не может быть пустым!");
+                continue;
+            }
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(name_ishodnik))) {
+                ArrayList<String> lines = new ArrayList<>();
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    lines.add(line);
+                }
+
+                cycle = false;
+
+                System.out.print("Введите название файла для расшифрованного результата (с .txt): ");
+                name_end = scanner.nextLine();
+
+                if (name_end.trim().isEmpty()) {
+                    name_end = name_ishodnik.replace(".txt", "_encrypted.txt");
+                    if (name_end.equals(name_ishodnik)) {
+                        name_end = name_ishodnik + "_encrypted.txt";
+                    }
+                    System.out.println("Будет использовано имя: " + name_end);
+                }
+
+                boolean key_cycle = true;
+                String key = "";
+                do{
+                    System.out.print("Введи ключ - пароль шифрования (слово или фразу на руссом языке" +
+                            ",не более 30 символов)\n" +
+                            "Ваш вариант: ");
+                    key= scanner.nextLine();
+                    if(key.length()<=30){
+                        for(char c : key.toCharArray()){
+                            if(!reverseDict.containsKey(c)){
+                                System.out.println("Ошибка! Слово должно полностью состоять из русских букв!\n" +
+                                        "Попробуйте ещё раз!");
+                                key_cycle = false;
+                                break;
+
+                            }
+                            else{
+                                key_cycle = true;
+                            }
+                        }
+
+                    }
+                    else {
+                        System.out.println("Произошла ошибка, вы ввели слишком длинно слово длинное!");
+                        key_cycle = false;
+
+                    }
+
+                } while (!key_cycle);
+
+                System.out.println("Кодовое слово успешно учтено!");
+
+
+                try (PrintWriter writer = new PrintWriter(name_end)) {
+                    int isxodIndex;
+                    int keyIndex =0;
+                    int newIndex;
+                    String bestKey = key.trim();
+                    int bestKeyLength = bestKey.length();
+                    char[] bestKeyArray = bestKey.toCharArray();
+                    for (String originalLine : lines) {
+                        StringBuilder encryptedLine = new StringBuilder();
+
+                        for (char c : originalLine.toCharArray()) {
+                            if(reverseDict.containsKey(c)){
+                                isxodIndex = reverseDict.get(c);
+                                int smesenie = reverseDict.get(bestKeyArray[keyIndex]);
+                                if(isxodIndex -smesenie >=0){
+                                    newIndex = isxodIndex-smesenie;
+                                }else{
+                                    newIndex =  isxodIndex - smesenie + dictSize;
+                                }
+                                keyIndex++;
+                                if(keyIndex ==bestKeyLength){keyIndex=0;}
+
+                                encryptedLine.append(dictionary.get(newIndex));
+
+
+                            }else{
+
+                                encryptedLine.append(c);
+                            }
+                        }
+
+                        writer.println(encryptedLine.toString());
+                    }
+
+                    System.out.println("Файл успешно расшифрован и сохранен: " + name_end);
+                    System.out.println("Использован ключ: " + key);
+
+
+
+                } catch (FileNotFoundException e) {
+                    System.out.println("Не удалось создать выходной файл: " + e.getMessage());
+                }
+
+            } catch (FileNotFoundException e) {
+                System.out.println("\nФайл с таким именем не найден, попробуйте ввести имя ещё раз!");
+            } catch (IOException e) {
+                System.out.println("Ошибка чтения файла: " + e.getMessage());
+                System.out.println("Попробуйте ещё раз!");
+            }
+        }
 
     }
 
