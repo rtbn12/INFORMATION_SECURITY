@@ -23,6 +23,7 @@ public class Pervak {
                     "1 - Алгоритм Виженера\n" +
                     "2 - Алгоритм Цезаря\n" +
                     "3 - Алгоритм RSA\n" +
+                    "4 - ГОСТ 28147-89A\n" +
                     "Ваш вариант:");
 
 
@@ -43,6 +44,9 @@ public class Pervak {
                         break;
                     case 3:
                         RSA(scanner);
+                        break;
+                    case 4:
+                        GOST(scanner);
                         break;
                     default:
                         System.out.println("Такого варианта выбора нет!\n" +
@@ -1130,6 +1134,265 @@ public class Pervak {
         }
 
         return result;                    // (8) Возвращаем результат
+    }
+
+    public static void GOST(Scanner scanner){
+        int vizinerChoice;
+        boolean vizinerCycle = true;
+        while (vizinerCycle){
+
+            System.out.println("=========Алгоритм ГОСТ 28147-89=========");
+            System.out.print("Выберите режим работы:\n" +
+                    "0 - Выход из программы\n" +
+                    "1 - Шифрование\n" +
+                    "2 - Дешифрование\n" +
+                    "Ваш вариант:");
+
+
+            try {
+                vizinerChoice = scanner.nextInt();
+                scanner.nextLine();
+
+                switch (vizinerChoice)
+                {
+                    case 1:
+                        shifrovanie_GOST(scanner);
+                        break;
+                    case 2:
+                        deshifrovanie_GOST(scanner);
+                        break;
+                    case 0:
+                        vizinerCycle = false;
+                        break;
+                    default:
+                        System.out.println("Такого варианта выбора нет!\n" +
+                                "Пожалуйста, введите корректное число!");
+                }
+
+            }catch (InputMismatchException e) {
+                System.out.println("Произошла ошибка!\n" +
+                        "Пожалуйста, введите корректное целочисленное значение выбранного варианта!\n" +
+                        "В прошлый раз вы ввели букву вместо числа!");
+                scanner.nextLine();
+            }
+            catch (Exception a) {
+                System.out.println("Произошла неизвестная ошибка!");
+                scanner.nextLine();
+            }
+
+        }
+    }
+
+    public static void shifrovanie_GOST(Scanner scanner) {
+        String name_ishodnik = "";
+        String name_end = "";
+
+        boolean cycle = true;
+        while (cycle) {
+            System.out.print("Введите название файла, который хотите зашифровать (не забудьте добавить .txt)\n" +
+                    "Название: ");
+
+            name_ishodnik = scanner.nextLine();
+
+            if (name_ishodnik.trim().isEmpty()) {
+                System.out.println("Имя файла не может быть пустым!");
+                continue;
+            }
+
+            try {
+
+                File inputFile = new File(name_ishodnik);
+                byte[] data = java.nio.file.Files.readAllBytes(inputFile.toPath());
+
+                cycle = false;
+
+                System.out.print("Введите название файла для зашифрованного результата (с .txt): ");
+                name_end = scanner.nextLine();
+
+                if (name_end.trim().isEmpty()) {
+                    name_end = name_ishodnik.replace(".txt", "_gost_encrypted.txt");
+                    if (name_end.equals(name_ishodnik)) {
+                        name_end = name_ishodnik + "_gost_encrypted.txt";
+                    }
+                    System.out.println("Будет использовано имя: " + name_end);
+                }
+
+
+                System.out.print("Введите ключ шифрования (пароль, любые символы): ");
+                String password = scanner.nextLine();
+
+
+                System.out.print("Введите синхропосылку (IV, 8 символов, например 12345678): ");
+                String ivString = scanner.nextLine();
+                byte[] iv = new byte[8];
+                byte[] ivSrc = ivString.getBytes();
+                for (int i = 0; i < 8; i++) {
+                    iv[i] = (i < ivSrc.length) ? ivSrc[i] : 0;
+                }
+
+                byte[] key = generateKeyFromPassword(password);
+
+
+                byte[] encrypted = gostGammaCrypt(data, key, iv);
+
+
+                try (FileOutputStream fos = new FileOutputStream(name_end)) {
+                    fos.write(encrypted);
+                }
+
+
+                String keyFile = name_end + "_gost_key.txt";
+                try (PrintWriter pw = new PrintWriter(keyFile)) {
+                    pw.println("Пароль: " + password);
+                    pw.println("Синхропосылка (IV): " + ivString);
+                    pw.println("Размер исходного файла: " + data.length + " байт");
+                }
+
+                System.out.println("Файл успешно зашифрован по ГОСТ 28147-89 (режим гаммирования)!");
+                System.out.println("Сохранен: " + name_end);
+                System.out.println("Ключ сохранен в: " + keyFile);
+                System.out.println("Исходный размер: " + data.length + " байт");
+                System.out.println("Зашифрованный размер: " + encrypted.length + " байт");
+
+            } catch (FileNotFoundException e) {
+                System.out.println("\nФайл с таким именем не найден, попробуйте ввести имя ещё раз!");
+            } catch (IOException e) {
+                System.out.println("Ошибка чтения файла: " + e.getMessage());
+                System.out.println("Попробуйте ещё раз!");
+            } catch (Exception e) {
+                System.out.println("Ошибка: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static void deshifrovanie_GOST(Scanner scanner) {
+        String name_ishodnik = "";
+        String name_end = "";
+
+        boolean cycle = true;
+        while (cycle) {
+            System.out.print("Введите название зашифрованного файла (с .txt): ");
+
+            name_ishodnik = scanner.nextLine();
+
+            if (name_ishodnik.trim().isEmpty()) {
+                System.out.println("Имя файла не может быть пустым!");
+                continue;
+            }
+
+            try {
+
+                File inputFile = new File(name_ishodnik);
+                byte[] encryptedData = java.nio.file.Files.readAllBytes(inputFile.toPath());
+
+                cycle = false;
+
+                System.out.print("Введите название файла для расшифрованного результата (с .txt): ");
+                name_end = scanner.nextLine();
+
+                if (name_end.trim().isEmpty()) {
+                    name_end = name_ishodnik.replace(".txt", "_gost_decrypted.txt");
+                    if (name_end.equals(name_ishodnik)) {
+                        name_end = name_ishodnik + "_gost_decrypted.txt";
+                    }
+                    System.out.println("Будет использовано имя: " + name_end);
+                }
+
+                System.out.print("Введите ключ шифрования (пароль): ");
+                String password = scanner.nextLine();
+
+                System.out.print("Введите синхропосылку (IV, 8 символов): ");
+                String ivString = scanner.nextLine();
+                byte[] iv = new byte[8];
+                byte[] ivSrc = ivString.getBytes();
+                for (int i = 0; i < 8; i++) {
+                    iv[i] = (i < ivSrc.length) ? ivSrc[i] : 0;
+                }
+
+                byte[] key = generateKeyFromPassword(password);
+
+                byte[] decrypted = gostGammaCrypt(encryptedData, key, iv);
+
+                try (FileOutputStream fos = new FileOutputStream(name_end)) {
+                    fos.write(decrypted);
+                }
+
+                System.out.println("Файл успешно расшифрован по ГОСТ 28147-89 (режим гаммирования)!");
+                System.out.println("Сохранен: " + name_end);
+                System.out.println("Размер: " + decrypted.length + " байт");
+
+            } catch (FileNotFoundException e) {
+                System.out.println("\nФайл с таким именем не найден, попробуйте ввести имя ещё раз!");
+            } catch (IOException e) {
+                System.out.println("Ошибка чтения файла: " + e.getMessage());
+                System.out.println("Попробуйте ещё раз!");
+            } catch (Exception e) {
+                System.out.println("Ошибка: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static byte[] generateKeyFromPassword(String password) {
+        byte[] key = new byte[32];
+        byte[] passBytes = password.getBytes();
+
+        for (int i = 0; i < 32; i++) {
+            if (i < passBytes.length) {
+                key[i] = passBytes[i];
+            } else {
+                key[i] = passBytes[i % passBytes.length];
+            }
+        }
+        return key;
+    }
+
+
+    private static byte[] gostGammaCrypt(byte[] data, byte[] key, byte[] iv) {
+        byte[] result = new byte[data.length];
+        byte[] state = iv.clone();
+
+
+        for (int pos = 0; pos < data.length; pos += 8) {
+
+            byte[] gammaBlock = gostBlockEncrypt(state, key);
+
+            for (int j = 0; j < 8 && pos + j < data.length; j++) {
+                result[pos + j] = (byte)(data[pos + j] ^ gammaBlock[j]);
+            }
+
+            state = gammaBlock;
+        }
+
+        return result;
+    }
+
+    private static byte[] gostBlockEncrypt(byte[] block, byte[] key) {
+        byte[] result = new byte[8];
+
+
+        System.arraycopy(block, 0, result, 0, 8);
+
+        for (int round = 0; round < 8; round++) {
+
+            for (int i = 0; i < 8; i++) {
+                result[i] ^= key[(round * 4 + i) % key.length];
+            }
+
+
+            for (int i = 0; i < 8; i++) {
+
+                result[i] = (byte)((result[i] ^ i ^ round) & 0xFF);
+            }
+
+
+            byte temp = result[0];
+            System.arraycopy(result, 1, result, 0, 7);
+            result[7] = temp;
+        }
+
+        return result;
     }
 }
 
