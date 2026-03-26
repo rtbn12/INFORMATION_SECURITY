@@ -24,6 +24,7 @@ public class Pervak {
                     "2 - Алгоритм Цезаря\n" +
                     "3 - Алгоритм RSA\n" +
                     "4 - ГОСТ 28147-89A\n" +
+                    "5 - Дешифрация, основанная на частотных характеристиках\n" +
                     "Ваш вариант:");
 
 
@@ -47,6 +48,9 @@ public class Pervak {
                         break;
                     case 4:
                         GOST(scanner);
+                        break;
+                    case 5:
+                        deshifrChastotHaracteristika(scanner);
                         break;
                     default:
                         System.out.println("Такого варианта выбора нет!\n" +
@@ -1394,6 +1398,422 @@ public class Pervak {
 
         return result;
     }
+
+
+    public static void deshifrChastotHaracteristika(Scanner scanner){
+
+        String name_ishodnik = "";
+        String name_end = "";
+        String statistic = "";
+
+        HashMap<Integer, Character> dictionary = createDictionary();
+
+
+        HashMap<Character, Integer> reverseDict = new HashMap<>();
+        for (Map.Entry<Integer, Character> entry : dictionary.entrySet()) {
+            reverseDict.put(entry.getValue(), entry.getKey());
+        }
+
+        HashMap<Character, Double> chastotDictionary = generatorChastotDictionary();
+
+        HashMap<Character, Integer> counterDictionary = createCounterDictionary();
+
+        HashMap<Character, Double> procentCounterDictionary = generatorChastotDictionary();
+
+        int countGlobal =0;
+        int countGLOBALGLOBAL =0;
+
+        boolean cycle = true;
+        while (cycle) {
+            System.out.print("Введите название зашифрованного файла (с .txt): ");
+            name_ishodnik = scanner.nextLine();
+
+            if (name_ishodnik.trim().isEmpty()) {
+                System.out.println("Имя файла не может быть пустым!");
+                continue;
+            }
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(name_ishodnik))) {
+
+
+                System.out.print("Введите название файла для расшифрованного результата (с .txt): ");
+                name_end = scanner.nextLine();
+
+                if (name_end.trim().isEmpty()) {
+                    name_end = name_ishodnik.replace(".txt", "_decrypted.txt");
+                    System.out.println("Будет использовано имя: " + name_end);
+                }
+
+                 statistic = name_ishodnik + "statistic.txt";
+
+
+
+                try (PrintWriter writer = new PrintWriter(statistic)) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+
+                        for( char simbol : line.toCharArray()){
+
+                            if(counterDictionary.containsKey(simbol)){
+                                countGlobal++;
+                                counterDictionary.put(simbol, (counterDictionary.get(simbol)+1));
+                            }
+                            countGLOBALGLOBAL++;
+
+                        }
+
+                    }
+
+                    for(Map.Entry<Character, Integer> countryEntry : counterDictionary.entrySet()){
+
+
+                        procentCounterDictionary.put(countryEntry.getKey(), ((double)countryEntry.getValue()/countGlobal)); ///подсчёт частоты появления
+
+                    }
+
+                    writer.write("\nОбщее количество символов в тексте: " + countGLOBALGLOBAL);
+                    System.out.println("Общее количество символов в тексте: " + countGLOBALGLOBAL);
+                    writer.write("\nСимволы из доступного алфавита встречались " + countGlobal + " раз.");
+                    System.out.println("Символы из доступного алфавита встречались " + countGlobal + " раз.");
+                    writer.write("\nСтатистика по каждому символу:");
+                    System.out.println("\nСтатистика по каждому символу:");
+
+                    for(Map.Entry<Character, Double> staticEntry : procentCounterDictionary.entrySet()){
+                        writer.write("Символ: " + staticEntry.getKey() +"| Относительная частота появления: " + staticEntry.getValue());
+                        System.out.println("Символ: " + staticEntry.getKey() +"| Относительная частота появления: " + staticEntry.getValue());
+                    }
+
+
+
+                    System.out.println("Файл со статистикой успешно сохранён в сохранен: " + statistic);
+
+                    cycle = false;
+                }
+
+            } catch (FileNotFoundException e) {
+                System.out.println("\nФайл с таким именем не найден, попробуйте ввести имя ещё раз!");
+            } catch (IOException e) {
+                System.out.println("Ошибка чтения файла: " + e.getMessage());
+            } catch (InputMismatchException e) {
+                System.out.println("Ошибка: нужно вводить целые числа!");
+                scanner.nextLine();
+            }
+        }
+
+
+
+    }
+
+
+    public static HashMap<Character, Double> generatorChastotDictionary(){
+        /**
+         * Возвращает словарь, где для каждого символа (ключа) указана вероятность его
+         * встретить в русскоязычном тексте (в процентах).
+         * Данные основаны на статистике для букв, пробела и оценках для остальных символов.
+         * Сумма всех вероятностей = 100.0%
+         */
+
+            HashMap<Character, Double> freqMap = new HashMap<>();
+
+            // ===================================================
+            // 1. СТРОЧНЫЕ РУССКИЕ БУКВЫ (33 символа)
+            //    Источник: Национальный корпус русского языка
+            // ===================================================
+            freqMap.put('а', 7.998);   // буква А
+            freqMap.put('б', 1.592);   // буква Б
+            freqMap.put('в', 4.533);   // буква В
+            freqMap.put('г', 1.687);   // буква Г
+            freqMap.put('д', 2.977);   // буква Д
+            freqMap.put('е', 8.483);   // буква Е
+            freqMap.put('ё', 0.200);   // буква Ё (редкая)
+            freqMap.put('ж', 0.700);   // буква Ж
+            freqMap.put('з', 1.641);   // буква З
+            freqMap.put('и', 7.367);   // буква И
+            freqMap.put('й', 1.000);   // буква Й
+            freqMap.put('к', 3.486);   // буква К
+            freqMap.put('л', 4.343);   // буква Л
+            freqMap.put('м', 3.203);   // буква М
+            freqMap.put('н', 6.700);   // буква Н
+            freqMap.put('о', 10.983);  // буква О (самая частая)
+            freqMap.put('п', 2.804);   // буква П
+            freqMap.put('р', 4.746);   // буква Р
+            freqMap.put('с', 5.473);   // буква С
+            freqMap.put('т', 6.318);   // буква Т
+            freqMap.put('у', 2.615);   // буква У
+            freqMap.put('ф', 0.200);   // буква Ф (редкая)
+            freqMap.put('х', 0.900);   // буква Х
+            freqMap.put('ц', 0.400);   // буква Ц
+            freqMap.put('ч', 1.450);   // буква Ч
+            freqMap.put('ш', 0.600);   // буква Ш
+            freqMap.put('щ', 0.300);   // буква Щ
+            freqMap.put('ъ', 0.350);   // буква Ъ (твердый знак)
+            freqMap.put('ы', 1.898);   // буква Ы
+            freqMap.put('ь', 1.385);   // буква Ь (мягкий знак)
+            freqMap.put('э', 0.300);   // буква Э
+            freqMap.put('ю', 0.600);   // буква Ю
+            freqMap.put('я', 2.001);   // буква Я
+
+            // ===================================================
+            // 2. ПРОПИСНЫЕ РУССКИЕ БУКВЫ (33 символа)
+            //    Встречаются примерно в 40 раз реже строчных
+            // ===================================================
+            freqMap.put('А', 0.200);   // А заглавная (7.998 / 40)
+            freqMap.put('Б', 0.040);   // Б заглавная (1.592 / 40)
+            freqMap.put('В', 0.113);   // В заглавная (4.533 / 40)
+            freqMap.put('Г', 0.042);   // Г заглавная (1.687 / 40)
+            freqMap.put('Д', 0.074);   // Д заглавная (2.977 / 40)
+            freqMap.put('Е', 0.212);   // Е заглавная (8.483 / 40)
+            freqMap.put('Ё', 0.005);   // Ё заглавная (0.200 / 40)
+            freqMap.put('Ж', 0.018);   // Ж заглавная (0.700 / 40)
+            freqMap.put('З', 0.041);   // З заглавная (1.641 / 40)
+            freqMap.put('И', 0.184);   // И заглавная (7.367 / 40)
+            freqMap.put('Й', 0.025);   // Й заглавная (1.000 / 40)
+            freqMap.put('К', 0.087);   // К заглавная (3.486 / 40)
+            freqMap.put('Л', 0.109);   // Л заглавная (4.343 / 40)
+            freqMap.put('М', 0.080);   // М заглавная (3.203 / 40)
+            freqMap.put('Н', 0.168);   // Н заглавная (6.700 / 40)
+            freqMap.put('О', 0.275);   // О заглавная (10.983 / 40)
+            freqMap.put('П', 0.070);   // П заглавная (2.804 / 40)
+            freqMap.put('Р', 0.119);   // Р заглавная (4.746 / 40)
+            freqMap.put('С', 0.137);   // С заглавная (5.473 / 40)
+            freqMap.put('Т', 0.158);   // Т заглавная (6.318 / 40)
+            freqMap.put('У', 0.065);   // У заглавная (2.615 / 40)
+            freqMap.put('Ф', 0.005);   // Ф заглавная (0.200 / 40)
+            freqMap.put('Х', 0.023);   // Х заглавная (0.900 / 40)
+            freqMap.put('Ц', 0.010);   // Ц заглавная (0.400 / 40)
+            freqMap.put('Ч', 0.036);   // Ч заглавная (1.450 / 40)
+            freqMap.put('Ш', 0.015);   // Ш заглавная (0.600 / 40)
+            freqMap.put('Щ', 0.008);   // Щ заглавная (0.300 / 40)
+            freqMap.put('Ъ', 0.009);   // Ъ заглавная (0.350 / 40)
+            freqMap.put('Ы', 0.047);   // Ы заглавная (1.898 / 40)
+            freqMap.put('Ь', 0.035);   // Ь заглавная (1.385 / 40)
+            freqMap.put('Э', 0.008);   // Э заглавная (0.300 / 40)
+            freqMap.put('Ю', 0.015);   // Ю заглавная (0.600 / 40)
+            freqMap.put('Я', 0.050);   // Я заглавная (2.001 / 40)
+
+            // ===================================================
+            // 3. ПРОБЕЛ (самый частый символ)
+            // ===================================================
+            freqMap.put(' ', 17.500);  // пробел
+
+            // ===================================================
+            // 4. ЦИФРЫ (10 символов)
+            //    Цифры в тексте встречаются редко, примерно по 0.1% каждая
+            // ===================================================
+            freqMap.put('0', 0.100);   // ноль
+            freqMap.put('1', 0.100);   // один
+            freqMap.put('2', 0.100);   // два
+            freqMap.put('3', 0.100);   // три
+            freqMap.put('4', 0.100);   // четыре
+            freqMap.put('5', 0.100);   // пять
+            freqMap.put('6', 0.100);   // шесть
+            freqMap.put('7', 0.100);   // семь
+            freqMap.put('8', 0.100);   // восемь
+            freqMap.put('9', 0.100);   // девять
+
+            // ===================================================
+            // 5. ЗНАКИ ПРЕПИНАНИЯ И СИМВОЛЫ
+            //    Самые частые: точка, запятая, тире
+            // ===================================================
+            freqMap.put('.', 1.200);   // точка
+            freqMap.put(',', 1.100);   // запятая
+            freqMap.put('-', 0.800);   // дефис/тире
+            freqMap.put('!', 0.200);   // восклицательный знак
+            freqMap.put('?', 0.200);   // вопросительный знак
+            freqMap.put(':', 0.150);   // двоеточие
+            freqMap.put(';', 0.100);   // точка с запятой
+            freqMap.put('\"', 0.150);  // кавычка двойная
+            freqMap.put('\'', 0.150);  // кавычка одинарная
+            freqMap.put('(', 0.100);   // скобка открывающая
+            freqMap.put(')', 0.100);   // скобка закрывающая
+            freqMap.put('—', 0.200);   // длинное тире
+            freqMap.put('…', 0.050);   // многоточие
+            freqMap.put('«', 0.080);   // кавычка-елочка левая
+            freqMap.put('»', 0.080);   // кавычка-елочка правая
+
+            // ===================================================
+            // 6. РЕДКИЕ И СПЕЦИАЛЬНЫЕ СИМВОЛЫ
+            //    Остальные символы встречаются очень редко
+            // ===================================================
+            freqMap.put('+', 0.030);   // плюс
+            freqMap.put('=', 0.030);   // равно
+            freqMap.put('*', 0.020);   // звездочка
+            freqMap.put('/', 0.020);   // слеш
+            freqMap.put('\\', 0.010);  // обратный слеш
+            freqMap.put('%', 0.010);   // процент
+            freqMap.put('#', 0.005);   // решетка
+            freqMap.put('$', 0.005);   // доллар
+            freqMap.put('&', 0.005);   // амперсанд
+            freqMap.put('@', 0.005);   // собака
+            freqMap.put('^', 0.005);   // крышка
+            freqMap.put('~', 0.005);   // тильда
+            freqMap.put('`', 0.005);   // обратный апостроф
+            freqMap.put('_', 0.050);   // нижнее подчеркивание
+            freqMap.put('|', 0.005);   // вертикальная черта
+            freqMap.put('[', 0.020);   // квадратная скобка левая
+            freqMap.put(']', 0.020);   // квадратная скобка правая
+            freqMap.put('{', 0.010);   // фигурная скобка левая
+            freqMap.put('}', 0.010);   // фигурная скобка правая
+            freqMap.put('<', 0.020);   // меньше
+            freqMap.put('>', 0.020);   // больше
+            freqMap.put('№', 0.030);   // знак номера
+            freqMap.put('\n', 0.200);  // перевод строки
+
+            return freqMap;
+    }
+
+
+    public static HashMap<Character, Integer> createCounterDictionary() {
+        HashMap<Character, Integer> counterMap = new HashMap<>();
+
+        // ===================================================
+        // 1. СТРОЧНЫЕ РУССКИЕ БУКВЫ (33 символа)
+        // ===================================================
+        counterMap.put('а', 0);
+        counterMap.put('б', 0);
+        counterMap.put('в', 0);
+        counterMap.put('г', 0);
+        counterMap.put('д', 0);
+        counterMap.put('е', 0);
+        counterMap.put('ё', 0);
+        counterMap.put('ж', 0);
+        counterMap.put('з', 0);
+        counterMap.put('и', 0);
+        counterMap.put('й', 0);
+        counterMap.put('к', 0);
+        counterMap.put('л', 0);
+        counterMap.put('м', 0);
+        counterMap.put('н', 0);
+        counterMap.put('о', 0);
+        counterMap.put('п', 0);
+        counterMap.put('р', 0);
+        counterMap.put('с', 0);
+        counterMap.put('т', 0);
+        counterMap.put('у', 0);
+        counterMap.put('ф', 0);
+        counterMap.put('х', 0);
+        counterMap.put('ц', 0);
+        counterMap.put('ч', 0);
+        counterMap.put('ш', 0);
+        counterMap.put('щ', 0);
+        counterMap.put('ъ', 0);
+        counterMap.put('ы', 0);
+        counterMap.put('ь', 0);
+        counterMap.put('э', 0);
+        counterMap.put('ю', 0);
+        counterMap.put('я', 0);
+
+        // ===================================================
+        // 2. ПРОПИСНЫЕ РУССКИЕ БУКВЫ (33 символа)
+        // ===================================================
+        counterMap.put('А', 0);
+        counterMap.put('Б', 0);
+        counterMap.put('В', 0);
+        counterMap.put('Г', 0);
+        counterMap.put('Д', 0);
+        counterMap.put('Е', 0);
+        counterMap.put('Ё', 0);
+        counterMap.put('Ж', 0);
+        counterMap.put('З', 0);
+        counterMap.put('И', 0);
+        counterMap.put('Й', 0);
+        counterMap.put('К', 0);
+        counterMap.put('Л', 0);
+        counterMap.put('М', 0);
+        counterMap.put('Н', 0);
+        counterMap.put('О', 0);
+        counterMap.put('П', 0);
+        counterMap.put('Р', 0);
+        counterMap.put('С', 0);
+        counterMap.put('Т', 0);
+        counterMap.put('У', 0);
+        counterMap.put('Ф', 0);
+        counterMap.put('Х', 0);
+        counterMap.put('Ц', 0);
+        counterMap.put('Ч', 0);
+        counterMap.put('Ш', 0);
+        counterMap.put('Щ', 0);
+        counterMap.put('Ъ', 0);
+        counterMap.put('Ы', 0);
+        counterMap.put('Ь', 0);
+        counterMap.put('Э', 0);
+        counterMap.put('Ю', 0);
+        counterMap.put('Я', 0);
+
+        // ===================================================
+        // 3. ПРОБЕЛ
+        // ===================================================
+        counterMap.put(' ', 0);
+
+        // ===================================================
+        // 4. ЦИФРЫ (10 символов)
+        // ===================================================
+        counterMap.put('0', 0);
+        counterMap.put('1', 0);
+        counterMap.put('2', 0);
+        counterMap.put('3', 0);
+        counterMap.put('4', 0);
+        counterMap.put('5', 0);
+        counterMap.put('6', 0);
+        counterMap.put('7', 0);
+        counterMap.put('8', 0);
+        counterMap.put('9', 0);
+
+        // ===================================================
+        // 5. ЗНАКИ ПРЕПИНАНИЯ И ОСНОВНЫЕ СИМВОЛЫ
+        // ===================================================
+        counterMap.put('!', 0);
+        counterMap.put('"', 0);
+        counterMap.put('#', 0);
+        counterMap.put('$', 0);
+        counterMap.put('%', 0);
+        counterMap.put('&', 0);
+        counterMap.put('\'', 0);
+        counterMap.put('(', 0);
+        counterMap.put(')', 0);
+        counterMap.put('*', 0);
+        counterMap.put('+', 0);
+        counterMap.put(',', 0);
+        counterMap.put('-', 0);
+        counterMap.put('.', 0);
+        counterMap.put('/', 0);
+        counterMap.put(':', 0);
+        counterMap.put(';', 0);
+        counterMap.put('<', 0);
+        counterMap.put('=', 0);
+        counterMap.put('>', 0);
+        counterMap.put('?', 0);
+        counterMap.put('@', 0);
+        counterMap.put('[', 0);
+        counterMap.put('\\', 0);
+        counterMap.put(']', 0);
+        counterMap.put('^', 0);
+        counterMap.put('_', 0);
+        counterMap.put('`', 0);
+        counterMap.put('{', 0);
+        counterMap.put('|', 0);
+        counterMap.put('}', 0);
+        counterMap.put('~', 0);
+        counterMap.put('№', 0);
+
+        // ===================================================
+        // 6. СПЕЦИАЛЬНЫЕ СИМВОЛЫ
+        // ===================================================
+        counterMap.put('\n', 0);
+
+        // ===================================================
+        // 7. ДОПОЛНИТЕЛЬНЫЕ СИМВОЛЫ
+        // ===================================================
+        counterMap.put('«', 0);
+        counterMap.put('»', 0);
+        counterMap.put('—', 0);
+        counterMap.put('…', 0);
+
+        return counterMap;
+    }
+
+
+
 }
 
 
