@@ -1400,28 +1400,29 @@ public class Pervak {
     }
 
 
-    public static void deshifrChastotHaracteristika(Scanner scanner){
-
+    public static void deshifrChastotHaracteristika(Scanner scanner) {
         String name_ishodnik = "";
         String name_end = "";
         String statistic = "";
 
         HashMap<Integer, Character> dictionary = createDictionary();
 
-
         HashMap<Character, Integer> reverseDict = new HashMap<>();
         for (Map.Entry<Integer, Character> entry : dictionary.entrySet()) {
             reverseDict.put(entry.getValue(), entry.getKey());
         }
 
-        HashMap<Character, Double> chastotDictionary = generatorChastotDictionary();
+
+        HashMap<Character, Double> worldStats = generatorChastotDictionary();
+
 
         HashMap<Character, Integer> counterDictionary = createCounterDictionary();
 
-        HashMap<Character, Double> procentCounterDictionary = generatorChastotDictionary();
 
-        int countGlobal =0;
-        int countGLOBALGLOBAL =0;
+        HashMap<Character, Double> textFrequencies = new HashMap<>();
+
+        int countGlobal = 0; //количество символов из алфавита
+        int countTotal = 0;  // количество символов в тексте
 
         boolean cycle = true;
         while (cycle) {
@@ -1434,8 +1435,6 @@ public class Pervak {
             }
 
             try (BufferedReader reader = new BufferedReader(new FileReader(name_ishodnik))) {
-
-
                 System.out.print("Введите название файла для расшифрованного результата (с .txt): ");
                 name_end = scanner.nextLine();
 
@@ -1444,64 +1443,132 @@ public class Pervak {
                     System.out.println("Будет использовано имя: " + name_end);
                 }
 
-                 statistic = name_ishodnik + "statistic.txt";
+                statistic = name_ishodnik.replace(".txt", "_statistic.txt");
 
+                //подсчёт частот
+                String line;
+                StringBuilder fullText = new StringBuilder();
 
-
-                try (PrintWriter writer = new PrintWriter(statistic)) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-
-                        for( char simbol : line.toCharArray()){
-
-                            if(counterDictionary.containsKey(simbol)){
-                                countGlobal++;
-                                counterDictionary.put(simbol, (counterDictionary.get(simbol)+1));
-                            }
-                            countGLOBALGLOBAL++;
-
-                        }
-
-                    }
-
-                    for(Map.Entry<Character, Integer> countryEntry : counterDictionary.entrySet()){
-
-
-                        procentCounterDictionary.put(countryEntry.getKey(), ((double)countryEntry.getValue()/countGlobal)); ///подсчёт частоты появления
-
-                    }
-
-                    writer.write("\nОбщее количество символов в тексте: " + countGLOBALGLOBAL);
-                    System.out.println("Общее количество символов в тексте: " + countGLOBALGLOBAL);
-                    writer.write("\nСимволы из доступного алфавита встречались " + countGlobal + " раз.");
-                    System.out.println("Символы из доступного алфавита встречались " + countGlobal + " раз.");
-                    writer.write("\nСтатистика по каждому символу:");
-                    System.out.println("\nСтатистика по каждому символу:");
-
-                    for(Map.Entry<Character, Double> staticEntry : procentCounterDictionary.entrySet()){
-                        writer.write("Символ: " + staticEntry.getKey() +"| Относительная частота появления: " + staticEntry.getValue());
-                        System.out.println("Символ: " + staticEntry.getKey() +"| Относительная частота появления: " + staticEntry.getValue());
-                    }
-
-
-
-                    System.out.println("Файл со статистикой успешно сохранён в сохранен: " + statistic);
-
-                    cycle = false;
+                while ((line = reader.readLine()) != null) {
+                    fullText.append(line).append("\n");
                 }
+
+                String encryptedText = fullText.toString();
+
+                //подсчёт символов
+                for (char simbol : encryptedText.toCharArray()) {
+                    countTotal++;
+                    if (counterDictionary.containsKey(simbol)) {
+                        countGlobal++;
+                        counterDictionary.put(simbol, counterDictionary.get(simbol) + 1);
+                    }
+                }
+
+                // вычисление частот
+                for (Map.Entry<Character, Integer> entry : counterDictionary.entrySet()) {
+                    if (entry.getValue() > 0) {
+                        double frequency = (entry.getValue() * 100.0) / countGlobal;
+                        textFrequencies.put(entry.getKey(), frequency);
+                    }
+                }
+
+                // сопоставление частот
+                // Сортируем символы текста по убыванию частоты
+                List<Map.Entry<Character, Double>> textSorted = new ArrayList<>(textFrequencies.entrySet());
+                textSorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+                // Сортируем мировую статистику по убыванию частоты
+                List<Map.Entry<Character, Double>> worldSorted = new ArrayList<>(worldStats.entrySet());
+                worldSorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+                // создание карты замены
+                HashMap<Character, Character> substitutionMap = new HashMap<>();
+
+                System.out.println("\n========== СОПОСТАВЛЕНИЕ ЧАСТОТ ==========");
+                System.out.println("Символ текста | Частота % | Заменяем на | Частота мира %");
+                System.out.println("--------------------------------------------------------");
+
+                int matchCount = Math.min(textSorted.size(), worldSorted.size());
+                for (int i = 0; i < matchCount; i++) {
+                    Character textChar = textSorted.get(i).getKey();
+                    Double textFreq = textSorted.get(i).getValue();
+                    Character worldChar = worldSorted.get(i).getKey();
+                    Double worldFreq = worldSorted.get(i).getValue();
+
+                    substitutionMap.put(textChar, worldChar);
+
+                    System.out.printf("     '%c'      |   %6.2f   |     '%c'       |     %6.2f%n",
+                            textChar, textFreq, worldChar, worldFreq);
+
+//                    if (i < matchCount) {
+//                        System.out.printf("     '%c'      |   %6.2f   |     '%c'       |     %6.2f%n",
+//                                textChar, textFreq, worldChar, worldFreq);
+//                    }
+                }
+
+                // сохранение статистики в файл
+                try (PrintWriter writer = new PrintWriter(statistic)) {
+                    writer.println("========== СТАТИСТИКА ЗАШИФРОВАННОГО ТЕКСТА ==========");
+                    writer.println("Общее количество символов в тексте: " + countTotal);
+                    writer.println("Символы из доступного алфавита встречались: " + countGlobal + " раз.");
+                    writer.println("\n========== ЧАСТОТЫ СИМВОЛОВ ==========");
+                    writer.println("Символ | Количество | Частота %");
+                    writer.println("-------------------------------------");
+
+                    for (Map.Entry<Character, Integer> entry : counterDictionary.entrySet()) {
+
+                        if (entry.getValue() > 0) {
+                            double freq = textFrequencies.get(entry.getKey());
+                            writer.printf("  '%c'   |    %d     |   %.4f%%%n",
+                                    entry.getKey(), entry.getValue(), freq);
+                        }
+                    }
+
+                    writer.println("\n========== СОПОСТАВЛЕНИЕ ДЛЯ РАСШИФРОВКИ ==========");
+                    writer.println("Зашифрованный символ -> Расшифрованный символ");
+                    writer.println("-----------------------------------------------");
+
+                    List<Map.Entry<Character, Character>> sortedMap = new ArrayList<>(substitutionMap.entrySet());
+
+                    sortedMap.sort((a, b) -> {
+                        // Используем getOrDefault, чтобы избежать null
+                        Double freqA = textFrequencies.getOrDefault(a.getKey(), 0.0);  // <-- ИСПРАВИЛ ЗДЕСЬ
+                        Double freqB = textFrequencies.getOrDefault(b.getKey(), 0.0);  // <-- ИСПРАВИЛ ЗДЕСЬ
+                        return freqB.compareTo(freqA);
+                    });
+
+                    for (Map.Entry<Character, Character> entry : sortedMap) {
+                        writer.printf("        '%c'        ->        '%c'%n", entry.getKey(), entry.getValue());
+                    }
+                }
+
+                System.out.println("\nФайл со статистикой сохранен: " + statistic);
+
+                // расшифровка
+                try (PrintWriter writer2 = new PrintWriter(name_end)) {
+                    for (char simbol : encryptedText.toCharArray()) {
+                        if (substitutionMap.containsKey(simbol)) {
+                            writer2.print(substitutionMap.get(simbol));
+                        } else {
+                            writer2.print(simbol);
+                        }
+                    }
+                }
+
+                System.out.println("Файл успешно расшифрован и сохранен: " + name_end);
+                System.out.println("Количество замененных символов: " + substitutionMap.size());
+
+                cycle = false;
 
             } catch (FileNotFoundException e) {
                 System.out.println("\nФайл с таким именем не найден, попробуйте ввести имя ещё раз!");
             } catch (IOException e) {
                 System.out.println("Ошибка чтения файла: " + e.getMessage());
-            } catch (InputMismatchException e) {
-                System.out.println("Ошибка: нужно вводить целые числа!");
-                scanner.nextLine();
+            } catch (Exception e) {
+                System.out.println("Ошибка: " + e.getMessage());
+                e.printStackTrace();
             }
         }
-
-
-
     }
 
 
